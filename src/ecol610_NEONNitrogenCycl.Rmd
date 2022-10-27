@@ -102,6 +102,9 @@ dta_inorganic_n %>%
 ggplot(data = dta_inorganic_n) +
   geom_bar(mapping = aes(x = date_id), width = 0.7, color = "gray", alpha = 0.8) +
   scale_x_date(date_breaks = "1 month", date_labels = "%Y-%m") + 
+  xlab("Date") +
+  ylab("# Obs.") +
+  labs(title = "# Obs. per Day") +
   theme_bw()
 
 ```
@@ -117,13 +120,21 @@ Download the total N data from NEON in the MegaPit data. Easiest way to do this 
 Soil taxonomy, horizon names, horizon depths, soil bulk density, texture, and chemical properties in the <= 2 mm soil fraction for each soil horizon in each Megapit. Data were derived from a sampling location expected to be representative of the area where the Instrumented Soil Plots are located and were collected once during site construction, in collaboration with the USDA Natural Resources Conservation Service.
 
 The Megapit data package content includes:
+
 * mgp_perhorizon: Per soil horizon metadata
+
 * mgp_permegapit: Data collected per megapit
+
 * mgp_perarchivesample: Archived sample information
+
 * mgp_perbiogeosample: Data collected on biogeochemistry sample
+
 * mgp_perbulksample: Data collected on bulk density sample
+
 * variables: Description and units for each column of data in data tables
+
 * readme: Data product description, issue log, and other metadata about the data product
+
 * validation: Description of data validation applied at the points of collection and ingest
 
 ```{r}
@@ -209,9 +220,9 @@ vars_temp <- c(
   , "nitrate_pct"
 )
 vars_lab_temp <- c(
-  latex2exp::TeX("Soil Ammonium ($\\nu g \\cdot gram^{-1}$)")
-  , latex2exp::TeX("Soil Nitrate ($\\nu g \\cdot gram^{-1}$)")
-  , latex2exp::TeX("Tot. Inorganic Nitrogen ($\\nu g \\cdot gram^{-1}$)")
+  latex2exp::TeX("Soil Ammonium ($\\mu g \\cdot gram^{-1}$)")
+  , latex2exp::TeX("Soil Nitrate ($\\mu g \\cdot gram^{-1}$)")
+  , latex2exp::TeX("Tot. Inorganic Nitrogen ($\\mu g \\cdot gram^{-1}$)")
   , "Ammonium %"
   , "Nitrate %"
 )
@@ -256,7 +267,7 @@ Plots above are of the median daily value of each metric based on multiple measu
 ```{r, warning=FALSE, message=FALSE, echo=FALSE, include=FALSE}
 remove(list = ls()[grep("_temp",ls())])
 gc()
-fls_megapit[grep("mgp_permegapit",fls_megapit)]
+fls_megapit[grep("mgp_perbiogeosample",fls_megapit)]
 ```
 
 
@@ -265,6 +276,17 @@ fls_megapit[grep("mgp_permegapit",fls_megapit)]
 Calculate mean TIN and mean TIN/(total N (from megapit data) + TIN)
 
 ```{r}
-# in progress
+# read in 
+megapit <- read.csv(paste0(dir_megapit,"/", fls_megapit[grep("mgp_perbiogeosample",fls_megapit)])) %>% 
+  dplyr::mutate(nitrogenTot_gperkgsoil = nitrogenTot)
+# mean total N from megapit
+mean_nitrogenTot_gperkgsoil <- mean(megapit$nitrogenTot, na.rm = TRUE)  
+# mean inorganic from NEON csv
+mean_tin_gperkgsoil <- (mean(dta_inorganic_n$soilammoniumnugpergram, na.rm = TRUE) +
+                                mean(dta_inorganic_n$soilnitratenitritenugpergram, na.rm = TRUE)) / 1000
+# mean inorganic percent total
+inorganic_pct_total <- mean_tin_gperkgsoil/mean_nitrogenTot_gperkgsoil
 ```
+
+The inorganic Nitrogen at `r site` represents **`r scales::percent(inorganic_pct_total, accuracy = 0.01)`** of the total Nitrogen in the soil, on average.
 
